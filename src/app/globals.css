@@ -2,7 +2,7 @@
 
 :root {
   /* Warm, elegant paper palette */
-  --background: #eaddc0; /* page: warm sand */
+  --background: #eaddc0; /* page: warm sand (gradient base / fallback) */
   --foreground: #2b2620; /* ink */
 }
 
@@ -25,7 +25,10 @@ html {
 }
 
 body {
+  /* Soft diagonal wash: light cream at top-left easing into a deeper sand. */
   background: var(--background);
+  background: linear-gradient(150deg, #f3ead7 0%, #eaddc0 48%, #e2d0ac 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
