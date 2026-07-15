@@ -16,7 +16,7 @@ export default function EntriesTable({
 }) {
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-800">
+      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
         Loading entries…
       </div>
     );
@@ -24,16 +24,16 @@ export default function EntriesTable({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
         No time entries match the current filters.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full min-w-[720px] text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+        <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-4 py-3 font-medium">Date</th>
             <th className="px-4 py-3 font-medium">Employee</th>
@@ -41,22 +41,22 @@ export default function EntriesTable({
             <th className="px-4 py-3 font-medium">Duration</th>
             <th className="px-4 py-3 font-medium">Billable</th>
             <th className="px-4 py-3 font-medium">Notes</th>
-            <th className="px-4 py-3 font-medium text-right">Actions</th>
+            <th className="px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+        <tbody className="divide-y divide-slate-100">
           {entries.map((entry) => (
-            <tr key={entry.id} className="align-top">
-              <td className="whitespace-nowrap px-4 py-3">
+            <tr key={entry.id} className="align-top transition hover:bg-slate-50/70">
+              <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                 {formatDateLabel(entry.date)}
               </td>
-              <td className="whitespace-nowrap px-4 py-3">
+              <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-900">
                 {entry.employee_name}
               </td>
-              <td className="whitespace-nowrap px-4 py-3">
+              <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                 {entry.client_name}
               </td>
-              <td className="whitespace-nowrap px-4 py-3">
+              <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                 {formatDuration(entry.duration_minutes)}
                 {entry.start_time && entry.end_time && (
                   <span className="ml-1 text-xs text-slate-400">
@@ -68,26 +68,26 @@ export default function EntriesTable({
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                     entry.billable
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                      : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   {entry.billable ? "Billable" : "Non-billable"}
                 </span>
               </td>
-              <td className="max-w-[240px] px-4 py-3 text-slate-600 dark:text-slate-400">
+              <td className="max-w-[240px] px-4 py-3 text-slate-600">
                 {entry.notes || "—"}
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-right">
                 <button
                   onClick={() => onEdit(entry)}
-                  className="mr-3 text-xs font-medium text-slate-600 hover:underline dark:text-slate-300"
+                  className="mr-3 text-xs font-medium text-indigo-600 hover:underline"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => onDelete(entry)}
-                  className="text-xs font-medium text-red-600 hover:underline dark:text-red-400"
+                  className="text-xs font-medium text-red-600 hover:underline"
                 >
                   Delete
                 </button>

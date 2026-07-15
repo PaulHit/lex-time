@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import EntryForm, { EntryPayload } from "./EntryForm";
 import EntriesTable from "./EntriesTable";
 import SummaryStats from "./SummaryStats";
 import FiltersBar, { Filters } from "./FiltersBar";
+import Modal from "./Modal";
 import { rangeToDates } from "@/lib/time";
 import { Client, Employee, TimeEntry } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export default function TimeTrackerApp() {
   const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(
     null,
   );
+  const [modalOpen, setModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [filters, setFilters] = useState<Filters>({
     employeeId: "all",
@@ -85,6 +87,21 @@ export default function TimeTrackerApp() {
     localStorage.setItem(CURRENT_USER_KEY, String(id));
   }
 
+  function openNewEntry() {
+    setEditingEntry(null);
+    setModalOpen(true);
+  }
+
+  function openEditEntry(entry: TimeEntry) {
+    setEditingEntry(entry);
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditingEntry(null);
+  }
+
   async function createEmployee(name: string): Promise<Employee> {
     const res = await fetch("/api/employees", {
       method: "POST",
@@ -107,9 +124,13 @@ export default function TimeTrackerApp() {
     return client;
   }
 
-  async function handleCreateEntry(payload: EntryPayload) {
-    const res = await fetch("/api/entries", {
-      method: "POST",
+  async function handleSubmitEntry(payload: EntryPayload) {
+    const url = editingEntry
+      ? `/api/entries/${editingEntry.id}`
+      : "/api/entries";
+    const method = editingEntry ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -117,21 +138,7 @@ export default function TimeTrackerApp() {
       const err = await res.json();
       throw new Error(err.error ?? "Failed to save entry");
     }
-    await loadEntries(filters);
-  }
-
-  async function handleUpdateEntry(payload: EntryPayload) {
-    if (!editingEntry) return;
-    const res = await fetch(`/api/entries/${editingEntry.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error ?? "Failed to update entry");
-    }
-    setEditingEntry(null);
+    closeModal();
     await loadEntries(filters);
   }
 
@@ -146,84 +153,83 @@ export default function TimeTrackerApp() {
     await loadEntries(filters);
   }
 
-  const currentEmployee = useMemo(
-    () => employees.find((e) => e.id === currentEmployeeId) ?? null,
-    [employees, currentEmployeeId],
-  );
-
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
-            Lex Time
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-semibold text-slate-900">Lex Time</h1>
+          <p className="text-sm text-slate-500">
             Daily time tracking by client and billability
           </p>
         </div>
-        {employees.length > 0 && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-slate-500 dark:text-slate-400">
-              Logged in as
-            </span>
-            <select
-              value={currentEmployeeId ?? ""}
-              onChange={(e) => handleSwitchUser(Number(e.target.value))}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 font-medium dark:border-slate-700 dark:bg-slate-900"
-            >
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {employees.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-slate-500">
+              <span className="hidden sm:inline">Logged in as</span>
+              <select
+                value={currentEmployeeId ?? ""}
+                onChange={(e) => handleSwitchUser(Number(e.target.value))}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button
+            onClick={openNewEntry}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+          >
+            <span className="text-base leading-none">+</span>
+            Log time
+          </button>
+        </div>
       </header>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          {editingEntry ? "Edit time entry" : "Log time"}
-        </h2>
-        {(editingEntry || currentEmployeeId !== null) && (
-          <EntryForm
-            key={editingEntry?.id ?? "new"}
-            employees={employees}
-            clients={clients}
-            defaultEmployeeId={currentEmployeeId}
-            initial={editingEntry ?? undefined}
-            onSubmit={editingEntry ? handleUpdateEntry : handleCreateEntry}
-            onCancel={editingEntry ? () => setEditingEntry(null) : undefined}
-            onCreateEmployee={createEmployee}
-            onCreateClient={createClient}
-            submitLabel={editingEntry ? "Save changes" : "Log time"}
-          />
-        )}
-      </section>
+      <SummaryStats entries={entries} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Logged time
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700">Logged time</h2>
+          <span className="text-xs text-slate-400">
+            {entries.length} {entries.length === 1 ? "entry" : "entries"}
+          </span>
+        </div>
         <FiltersBar
           filters={filters}
           onChange={setFilters}
           employees={employees}
           clients={clients}
         />
-        <SummaryStats entries={entries} />
         <EntriesTable
           entries={entries}
           loading={loadingEntries}
-          onEdit={setEditingEntry}
+          onEdit={openEditEntry}
           onDelete={handleDeleteEntry}
         />
       </section>
 
-      {currentEmployee === null && employees.length === 0 && (
-        <p className="text-sm text-slate-500">Loading…</p>
-      )}
+      <Modal
+        open={modalOpen}
+        onClose={closeModal}
+        title={editingEntry ? "Edit time entry" : "Log time"}
+      >
+        <EntryForm
+          key={editingEntry?.id ?? "new"}
+          employees={employees}
+          clients={clients}
+          defaultEmployeeId={currentEmployeeId}
+          initial={editingEntry ?? undefined}
+          onSubmit={handleSubmitEntry}
+          onCancel={closeModal}
+          onCreateEmployee={createEmployee}
+          onCreateClient={createClient}
+          submitLabel={editingEntry ? "Save changes" : "Log time"}
+        />
+      </Modal>
     </div>
   );
 }

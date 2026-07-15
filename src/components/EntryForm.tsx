@@ -16,6 +16,10 @@ export type EntryPayload = {
   notes: string | null;
 };
 
+const inputClass =
+  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+const labelClass = "text-xs font-medium text-slate-600";
+
 export default function EntryForm({
   employees,
   clients,
@@ -84,10 +88,6 @@ export default function EntryForm({
         billable,
         notes: notes.trim() || null,
       });
-      if (!initial) {
-        // reset for the next entry, keep employee/client/date sticky
-        setNotes("");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -96,11 +96,8 @@ export default function EntryForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/40"
-    >
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <CreatableSelect
           label="Employee"
           items={employees}
@@ -118,41 +115,37 @@ export default function EntryForm({
           addLabel="New client name"
         />
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-            Date
-          </label>
+          <label className={labelClass}>Date</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+            className={inputClass}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-            Billable
-          </span>
-          <label className="flex h-[34px] items-center gap-2 text-sm">
+          <span className={labelClass}>Billable status</span>
+          <label className="flex h-[38px] cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 shadow-sm">
             <input
               type="checkbox"
               checked={billable}
               onChange={(e) => setBillable(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300"
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
             />
             {billable ? "Billable" : "Non-billable"}
           </label>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4">
         <div className="flex items-center gap-2 text-xs">
           <button
             type="button"
             onClick={() => setMode("time")}
-            className={`rounded-full px-3 py-1 font-medium ${
+            className={`rounded-full px-3 py-1 font-medium transition ${
               mode === "time"
-                ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                : "border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-400"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-slate-600 ring-1 ring-slate-200"
             }`}
           >
             Start / end time
@@ -160,10 +153,10 @@ export default function EntryForm({
           <button
             type="button"
             onClick={() => setMode("duration")}
-            className={`rounded-full px-3 py-1 font-medium ${
+            className={`rounded-full px-3 py-1 font-medium transition ${
               mode === "duration"
-                ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                : "border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-400"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-slate-600 ring-1 ring-slate-200"
             }`}
           >
             Duration
@@ -171,79 +164,71 @@ export default function EntryForm({
         </div>
 
         {mode === "time" ? (
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                Start
-              </label>
+              <label className={labelClass}>Start</label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className={inputClass}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                End
-              </label>
+              <label className={labelClass}>End</label>
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className={inputClass}
               />
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-1 sm:w-40">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Hours
-            </label>
+            <label className={labelClass}>Hours</label>
             <input
               type="number"
               step="0.25"
               min="0.25"
               value={durationHours}
               onChange={(e) => setDurationHours(e.target.value)}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+              className={inputClass}
             />
           </div>
         )}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-          Notes (optional)
-        </label>
+        <label className={labelClass}>Notes (optional)</label>
         <input
           type="text"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Brief description of the work"
-          className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+          className={inputClass}
         />
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
-        >
-          {submitting ? "Saving…" : submitLabel}
-        </button>
+      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
             Cancel
           </button>
         )}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {submitting ? "Saving…" : submitLabel}
+        </button>
       </div>
     </form>
   );

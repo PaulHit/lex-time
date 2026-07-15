@@ -6,6 +6,7 @@ Built with Next.js (App Router, TypeScript) and a local SQLite database via `bet
 
 ## Features
 
+- **List-first layout**: summary stats and the full time-entry list load on open. A **Log time** button opens a modal form; the same modal (pre-filled) is reused for editing an entry.
 - **Log time** with date, client, billable/non-billable, and duration — entered either as a start/end time (auto-calculated) or directly in hours.
 - **View logged time** in a table showing date, employee, client, duration, and billable status, with live summary stats (total / billable / non-billable hours).
 - **Filter** entries by employee, client, billability, and date range (today / this week / this month / all time).
@@ -39,7 +40,7 @@ npm run start
 - **Framework**: Next.js App Router with Route Handlers (`src/app/api/**`) acting as the backend API.
 - **Database**: SQLite via `better-sqlite3`, schema and seed data initialized lazily in [src/lib/db.ts](src/lib/db.ts). The `data/` directory is gitignored — it's local, per-machine state, not something to commit.
 - **Data model**: `employees`, `clients`, and `time_entries` tables. A time entry stores either `start_time`/`end_time` or a plain `duration_minutes`, plus a `billable` flag and optional notes.
-- **UI**: a single client-side page (`src/components/TimeTrackerApp.tsx`) composed of a form, filter bar, summary stats, and table, talking to the API routes over `fetch`.
+- **UI**: a single client-side page (`src/components/TimeTrackerApp.tsx`) composed of summary stats, a filter bar, a table, and a modal entry form (`src/components/Modal.tsx` + `EntryForm.tsx`), talking to the API routes over `fetch`. Light, bright theme throughout.
 
 ## What's out of scope (per the assignment)
 
