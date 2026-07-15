@@ -6,6 +6,7 @@ import EntriesTable from "./EntriesTable";
 import SummaryStats from "./SummaryStats";
 import FiltersBar, { Filters } from "./FiltersBar";
 import Modal from "./Modal";
+import ManageModal from "./ManageModal";
 import { rangeToDates } from "@/lib/time";
 import { Client, Employee, TimeEntry } from "@/lib/types";
 
@@ -20,6 +21,7 @@ export default function TimeTrackerApp() {
     null,
   );
   const [modalOpen, setModalOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [filters, setFilters] = useState<Filters>({
     employeeId: "all",
@@ -124,6 +126,33 @@ export default function TimeTrackerApp() {
     return client;
   }
 
+  async function deleteEmployee(id: number): Promise<string | null> {
+    const res = await fetch(`/api/employees/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      return err.error ?? "Failed to delete employee";
+    }
+    const emps = await loadEmployees();
+    // If we just removed the person we were "logged in as", pick another.
+    if (!emps.some((e) => e.id === currentEmployeeId)) {
+      const next = emps[0]?.id ?? null;
+      setCurrentEmployeeId(next);
+      if (next) localStorage.setItem(CURRENT_USER_KEY, String(next));
+      else localStorage.removeItem(CURRENT_USER_KEY);
+    }
+    return null;
+  }
+
+  async function deleteClient(id: number): Promise<string | null> {
+    const res = await fetch(`/api/clients/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      return err.error ?? "Failed to delete client";
+    }
+    await loadClients();
+    return null;
+  }
+
   async function handleSubmitEntry(payload: EntryPayload) {
     const url = editingEntry
       ? `/api/entries/${editingEntry.id}`
@@ -157,31 +186,45 @@ export default function TimeTrackerApp() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Lex Time</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-stone-800">Lex Time</h1>
+          <p className="text-sm text-stone-500">
             Daily time tracking by client and billability
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           {employees.length > 0 && (
-            <label className="flex items-center gap-2 text-sm text-slate-500">
-              <span className="hidden sm:inline">Logged in as</span>
-              <select
-                value={currentEmployeeId ?? ""}
-                onChange={(e) => handleSwitchUser(Number(e.target.value))}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            <div className="flex flex-col gap-1">
+              <label
+                className="flex items-center gap-2 text-sm text-stone-500"
+                title="Mock sign-in — real auth is out of scope. New entries default to this person; everyone's time stays visible to all."
               >
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <span className="hidden sm:inline">Logged in as</span>
+                <select
+                  value={currentEmployeeId ?? ""}
+                  onChange={(e) => handleSwitchUser(Number(e.target.value))}
+                  className="rounded-lg border border-line bg-surface px-3 py-2 font-medium text-stone-900 shadow-sm outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+                >
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span className="hidden text-[11px] text-stone-400 sm:block">
+                Sets who new entries are logged under
+              </span>
+            </div>
           )}
           <button
+            onClick={() => setManageOpen(true)}
+            className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-sand"
+          >
+            Manage
+          </button>
+          <button
             onClick={openNewEntry}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-stone-900"
           >
             <span className="text-base leading-none">+</span>
             Log time
@@ -193,8 +236,8 @@ export default function TimeTrackerApp() {
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">Logged time</h2>
-          <span className="text-xs text-slate-400">
+          <h2 className="text-sm font-semibold text-stone-700">Logged time</h2>
+          <span className="text-xs text-stone-400">
             {entries.length} {entries.length === 1 ? "entry" : "entries"}
           </span>
         </div>
@@ -230,6 +273,18 @@ export default function TimeTrackerApp() {
           submitLabel={editingEntry ? "Save changes" : "Log time"}
         />
       </Modal>
+
+      <ManageModal
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        employees={employees}
+        clients={clients}
+        currentEmployeeId={currentEmployeeId}
+        onCreateEmployee={createEmployee}
+        onCreateClient={createClient}
+        onDeleteEmployee={deleteEmployee}
+        onDeleteClient={deleteClient}
+      />
     </div>
   );
 }

@@ -1,13 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f7fb;
-  --foreground: #0f172a;
+  /* Warm, elegant paper palette */
+  --background: #e9e1d1; /* page: soft warm beige */
+  --foreground: #2b2620; /* ink */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Surfaces */
+  --color-cream: #e9e1d1; /* page background */
+  --color-surface: #faf6ee; /* cards, inputs — warm ivory */
+  --color-sand: #f1ead9; /* subtle fills: table header, toggles */
+  --color-line: #ded2bc; /* borders */
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

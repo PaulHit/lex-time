@@ -11,8 +11,9 @@ Built with Next.js (App Router, TypeScript) and a local SQLite database via `bet
 - **View logged time** in a table showing date, employee, client, duration, and billable status, with live summary stats (total / billable / non-billable hours).
 - **Filter** entries by employee, client, billability, and date range (today / this week / this month / all time).
 - **Edit and delete** any entry inline.
-- **Clients and employees** can be added on the fly from the entry form (no separate admin screen needed) — a few of each are seeded on first run.
-- **Mock local user**: a "Logged in as" switcher in the header stands in for real auth (out of scope per the assignment) and is remembered across sessions via `localStorage`. All entries remain visible to everyone — there's no access control, matching the "local/mock user" scope.
+- **Clients and employees** can be added on the fly from the entry form, or managed in a dedicated **People & clients** dialog (add or remove). Removal is blocked while a person/client still has time entries, so you never orphan data. A few of each are seeded on first run.
+- **Long notes** collapse to a preview with a **Show more / Show less** toggle, so the table stays tidy.
+- **Mock local user**: the "Logged in as" switcher in the header stands in for real auth (out of scope per the assignment). It sets which employee new entries default to, and is remembered across sessions via `localStorage`. All entries stay visible to everyone — there's no access control, matching the "local/mock user" scope.
 - **Local persistence**: all data is stored in `data/timesheet.db` (SQLite), created automatically on first run. Nothing is lost on refresh or restart.
 
 ## Getting started

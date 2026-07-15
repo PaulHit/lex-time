@@ -17,8 +17,8 @@ export type EntryPayload = {
 };
 
 const inputClass =
-  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
-const labelClass = "text-xs font-medium text-slate-600";
+  "rounded-lg border border-line bg-surface px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200";
+const labelClass = "text-xs font-medium text-stone-600";
 
 export default function EntryForm({
   employees,
@@ -125,27 +125,27 @@ export default function EntryForm({
         </div>
         <div className="flex flex-col gap-1">
           <span className={labelClass}>Billable status</span>
-          <label className="flex h-[38px] cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 shadow-sm">
+          <label className="flex h-[38px] cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm text-stone-800 shadow-sm">
             <input
               type="checkbox"
               checked={billable}
               onChange={(e) => setBillable(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 rounded border-line accent-stone-700"
             />
             {billable ? "Billable" : "Non-billable"}
           </label>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4">
+      <div className="flex flex-col gap-3 rounded-xl bg-sand p-4">
         <div className="flex items-center gap-2 text-xs">
           <button
             type="button"
             onClick={() => setMode("time")}
             className={`rounded-full px-3 py-1 font-medium transition ${
               mode === "time"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-slate-600 ring-1 ring-slate-200"
+                ? "bg-stone-800 text-white"
+                : "bg-surface text-stone-600 ring-1 ring-line"
             }`}
           >
             Start / end time
@@ -155,8 +155,8 @@ export default function EntryForm({
             onClick={() => setMode("duration")}
             className={`rounded-full px-3 py-1 font-medium transition ${
               mode === "duration"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-slate-600 ring-1 ring-slate-200"
+                ? "bg-stone-800 text-white"
+                : "bg-surface text-stone-600 ring-1 ring-line"
             }`}
           >
             Duration
@@ -212,12 +212,12 @@ export default function EntryForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+      <div className="flex justify-end gap-2 border-t border-line pt-4">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-sand"
           >
             Cancel
           </button>
@@ -225,7 +225,7 @@ export default function EntryForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+          className="rounded-lg bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-stone-900 disabled:opacity-50"
         >
           {submitting ? "Saving…" : submitLabel}
         </button>

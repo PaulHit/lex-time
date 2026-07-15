@@ -5,7 +5,7 @@ import { useState } from "react";
 type Item = { id: number; name: string };
 
 const fieldClass =
-  "min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+  "min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200";
 
 export default function CreatableSelect({
   label,
@@ -42,7 +42,7 @@ export default function CreatableSelect({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-slate-600">{label}</label>
+      <label className="text-xs font-medium text-stone-600">{label}</label>
       {adding ? (
         <div className="flex gap-1">
           <input
@@ -63,14 +63,14 @@ export default function CreatableSelect({
             type="button"
             disabled={busy || !newName.trim()}
             onClick={handleCreate}
-            className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-indigo-700 disabled:opacity-40"
+            className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-medium text-white transition hover:bg-stone-900 disabled:opacity-40"
           >
             Add
           </button>
           <button
             type="button"
             onClick={() => setAdding(false)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-600 transition hover:bg-slate-50"
+            className="rounded-lg border border-line px-3 py-2 text-xs text-stone-600 transition hover:bg-sand"
           >
             Cancel
           </button>
@@ -95,7 +95,7 @@ export default function CreatableSelect({
             type="button"
             onClick={() => setAdding(true)}
             title={addLabel}
-            className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
+            className="shrink-0 rounded-lg border border-line px-3 py-2 text-sm text-stone-600 transition hover:bg-sand"
           >
             +
           </button>

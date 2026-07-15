@@ -30,7 +30,7 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-900/40 p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
     >
       <div
@@ -38,14 +38,14 @@ export default function Modal({
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-slate-200"
+        className="my-8 w-full max-w-2xl rounded-2xl bg-surface shadow-xl ring-1 ring-line"
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+          <h2 className="text-lg font-semibold text-stone-800">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-md p-1 text-stone-400 transition hover:bg-sand hover:text-stone-600"
           >
             <svg
               width="20"

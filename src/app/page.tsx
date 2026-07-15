@@ -2,7 +2,7 @@ import TimeTrackerApp from "@/components/TimeTrackerApp";
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col bg-slate-50">
+    <div className="flex flex-1 flex-col bg-cream">
       <TimeTrackerApp />
     </div>
   );
