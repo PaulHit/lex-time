@@ -7,19 +7,37 @@ export type Filters = {
   range: "all" | "today" | "week" | "month";
 };
 
+export const DEFAULT_FILTERS: Filters = {
+  employeeId: "all",
+  clientId: "all",
+  billable: "all",
+  range: "all",
+};
+
+export function hasActiveFilters(filters: Filters): boolean {
+  return (
+    filters.employeeId !== "all" ||
+    filters.clientId !== "all" ||
+    filters.billable !== "all" ||
+    filters.range !== "all"
+  );
+}
+
 export default function FiltersBar({
   filters,
   onChange,
+  onReset,
   employees,
   clients,
 }: {
   filters: Filters;
   onChange: (filters: Filters) => void;
+  onReset: () => void;
   employees: Employee[];
   clients: Client[];
 }) {
   return (
-    <div className="flex flex-wrap gap-3 rounded-xl border border-line bg-surface p-3 shadow-sm">
+    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-3 shadow-sm">
       <FilterSelect
         label="Employee"
         value={String(filters.employeeId)}
@@ -63,6 +81,15 @@ export default function FiltersBar({
           { value: "month", label: "This month" },
         ]}
       />
+      {hasActiveFilters(filters) && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="ml-auto self-end rounded-lg border border-line px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-sand"
+        >
+          Clear filters
+        </button>
+      )}
     </div>
   );
 }

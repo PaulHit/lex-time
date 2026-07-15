@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import EntryForm, { EntryPayload } from "./EntryForm";
 import EntriesTable from "./EntriesTable";
 import SummaryStats from "./SummaryStats";
-import FiltersBar, { Filters } from "./FiltersBar";
+import FiltersBar, { Filters, DEFAULT_FILTERS } from "./FiltersBar";
 import Modal from "./Modal";
 import ManageModal from "./ManageModal";
 import { rangeToDates } from "@/lib/time";
@@ -24,10 +24,7 @@ export default function TimeTrackerApp() {
   const [manageOpen, setManageOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [filters, setFilters] = useState<Filters>({
-    employeeId: "all",
-    clientId: "all",
-    billable: "all",
-    range: "all",
+    ...DEFAULT_FILTERS,
   });
 
   const loadEmployees = useCallback(async () => {
@@ -140,6 +137,11 @@ export default function TimeTrackerApp() {
       if (next) localStorage.setItem(CURRENT_USER_KEY, String(next));
       else localStorage.removeItem(CURRENT_USER_KEY);
     }
+    // Clear a filter that pointed at the now-deleted employee, otherwise it
+    // would keep silently filtering by a missing id and show nothing.
+    if (filters.employeeId === id) {
+      setFilters((f) => ({ ...f, employeeId: "all" }));
+    }
     return null;
   }
 
@@ -150,6 +152,9 @@ export default function TimeTrackerApp() {
       return err.error ?? "Failed to delete client";
     }
     await loadClients();
+    if (filters.clientId === id) {
+      setFilters((f) => ({ ...f, clientId: "all" }));
+    }
     return null;
   }
 
@@ -244,6 +249,7 @@ export default function TimeTrackerApp() {
         <FiltersBar
           filters={filters}
           onChange={setFilters}
+          onReset={() => setFilters({ ...DEFAULT_FILTERS })}
           employees={employees}
           clients={clients}
         />
