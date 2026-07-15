@@ -2,7 +2,7 @@
 
 :root {
   /* Warm, elegant paper palette */
-  --background: #e9e1d1; /* page: soft warm beige */
+  --background: #eaddc0; /* page: warm sand */
   --foreground: #2b2620; /* ink */
 }
 
@@ -11,7 +11,7 @@
   --color-foreground: var(--foreground);
 
   /* Surfaces */
-  --color-cream: #e9e1d1; /* page background */
+  --color-cream: #eaddc0; /* page background — warm sand */
   --color-surface: #faf6ee; /* cards, inputs — warm ivory */
   --color-sand: #f1ead9; /* subtle fills: table header, toggles */
   --color-line: #ded2bc; /* borders */
