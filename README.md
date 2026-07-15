@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lex Time
 
-## Getting Started
+A time-tracking tool for a law firm to log employee hours by day, client, and billability.
 
-First, run the development server:
+Built with Next.js (App Router, TypeScript) and a local SQLite database via `better-sqlite3`. No cloud services, no auth provider — data lives in a SQLite file on disk so it survives restarts and refreshes.
+
+## Features
+
+- **Log time** with date, client, billable/non-billable, and duration — entered either as a start/end time (auto-calculated) or directly in hours.
+- **View logged time** in a table showing date, employee, client, duration, and billable status, with live summary stats (total / billable / non-billable hours).
+- **Filter** entries by employee, client, billability, and date range (today / this week / this month / all time).
+- **Edit and delete** any entry inline.
+- **Clients and employees** can be added on the fly from the entry form (no separate admin screen needed) — a few of each are seeded on first run.
+- **Mock local user**: a "Logged in as" switcher in the header stands in for real auth (out of scope per the assignment) and is remembered across sessions via `localStorage`. All entries remain visible to everyone — there's no access control, matching the "local/mock user" scope.
+- **Local persistence**: all data is stored in `data/timesheet.db` (SQLite), created automatically on first run. Nothing is lost on refresh or restart.
+
+## Getting started
+
+Requires Node.js 18+.
 
 ```bash
+git clone <this-repo-url>
+cd software_vision
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The database is created automatically at `data/timesheet.db` and seeded with a few example employees, clients, and time entries the first time the app runs.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Tech notes
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework**: Next.js App Router with Route Handlers (`src/app/api/**`) acting as the backend API.
+- **Database**: SQLite via `better-sqlite3`, schema and seed data initialized lazily in [src/lib/db.ts](src/lib/db.ts). The `data/` directory is gitignored — it's local, per-machine state, not something to commit.
+- **Data model**: `employees`, `clients`, and `time_entries` tables. A time entry stores either `start_time`/`end_time` or a plain `duration_minutes`, plus a `billable` flag and optional notes.
+- **UI**: a single client-side page (`src/components/TimeTrackerApp.tsx`) composed of a form, filter bar, summary stats, and table, talking to the API routes over `fetch`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## What's out of scope (per the assignment)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Real authentication — the "logged in as" employee switcher is a mock/local user, not a real auth system.
+- A cloud database or hosted backend — persistence is local SQLite.
