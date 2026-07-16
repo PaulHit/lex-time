@@ -4,6 +4,12 @@ A time-tracking tool for a law firm to log employee hours by day, client, and bi
 
 Built with Next.js (App Router, TypeScript) and a local SQLite database via `better-sqlite3`. No cloud services, no auth provider — data lives in a SQLite file on disk so it survives restarts and refreshes.
 
+## How it's modelled
+
+Lex Time is a **single, firm-wide timesheet** — an internal tool the firm opens to record and review everyone's hours, rather than a per-person SaaS account. There is deliberately **no login**: real authentication is out of scope for this assessment, and a mock "logged in as" switcher would have been a fiction that changed nothing (any employee could still be picked on any entry). So instead of pretending, each entry simply names the employee it belongs to, and the list, filters, and stats give a firm-wide view.
+
+If this were taken further, real per-user auth would be the natural next step: each employee signs in, entries are attributed to them automatically, and the firm-wide view becomes a partner/admin role.
+
 ## Features
 
 - **List-first layout**: summary stats and the full time-entry list load on open. A **Log time** button opens a modal form; the same modal (pre-filled) is reused for editing an entry.
@@ -13,7 +19,6 @@ Built with Next.js (App Router, TypeScript) and a local SQLite database via `bet
 - **Edit and delete** any entry inline.
 - **Clients and employees** can be added on the fly from the entry form, or managed in a dedicated **People & clients** dialog (add or remove). Removal is blocked while a person/client still has time entries, so you never orphan data. A few of each are seeded on first run.
 - **Long notes** collapse to a preview with a **Show more / Show less** toggle, so the table stays tidy.
-- **Mock local user**: the "Logged in as" switcher in the header stands in for real auth (out of scope per the assignment). It sets which employee new entries default to, and is remembered across sessions via `localStorage`. All entries stay visible to everyone — there's no access control, matching the "local/mock user" scope.
 - **Local persistence**: all data is stored in `data/timesheet.db` (SQLite), created automatically on first run. Nothing is lost on refresh or restart.
 
 ## Getting started
@@ -45,5 +50,5 @@ npm run start
 
 ## What's out of scope (per the assignment)
 
-- Real authentication — the "logged in as" employee switcher is a mock/local user, not a real auth system.
+- Real authentication — see [How it's modelled](#how-its-modelled): the app is a shared firm-wide timesheet with no login, rather than a mock sign-in that wouldn't actually gate anything.
 - A cloud database or hosted backend — persistence is local SQLite.

@@ -23,7 +23,6 @@ const labelClass = "text-xs font-medium text-stone-600";
 export default function EntryForm({
   employees,
   clients,
-  defaultEmployeeId,
   initial,
   onSubmit,
   onCancel,
@@ -33,7 +32,6 @@ export default function EntryForm({
 }: {
   employees: Employee[];
   clients: Client[];
-  defaultEmployeeId: number | null;
   initial?: TimeEntry;
   onSubmit: (payload: EntryPayload) => Promise<void>;
   onCancel?: () => void;
@@ -45,7 +43,7 @@ export default function EntryForm({
     initial?.start_time && initial?.end_time ? "time" : "duration",
   );
   const [employeeId, setEmployeeId] = useState<number | null>(
-    initial?.employee_id ?? defaultEmployeeId,
+    initial?.employee_id ?? null,
   );
   const [clientId, setClientId] = useState<number | null>(
     initial?.client_id ?? null,

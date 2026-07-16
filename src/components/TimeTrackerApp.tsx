@@ -10,16 +10,11 @@ import ManageModal from "./ManageModal";
 import { rangeToDates } from "@/lib/time";
 import { Client, Employee, TimeEntry } from "@/lib/types";
 
-const CURRENT_USER_KEY = "lex-time.current-employee-id";
-
 export default function TimeTrackerApp() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
-  const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(
-    null,
-  );
   const [modalOpen, setModalOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -62,15 +57,8 @@ export default function TimeTrackerApp() {
 
   useEffect(() => {
     (async () => {
-      const emps = await loadEmployees();
+      await loadEmployees();
       await loadClients();
-      const stored = localStorage.getItem(CURRENT_USER_KEY);
-      const storedId = stored ? Number(stored) : null;
-      if (storedId && emps.some((e) => e.id === storedId)) {
-        setCurrentEmployeeId(storedId);
-      } else if (emps.length > 0) {
-        setCurrentEmployeeId(emps[0].id);
-      }
     })();
   }, [loadEmployees, loadClients]);
 
@@ -80,11 +68,6 @@ export default function TimeTrackerApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadEntries(filters);
   }, [filters, loadEntries]);
-
-  function handleSwitchUser(id: number) {
-    setCurrentEmployeeId(id);
-    localStorage.setItem(CURRENT_USER_KEY, String(id));
-  }
 
   function openNewEntry() {
     setEditingEntry(null);
@@ -129,14 +112,7 @@ export default function TimeTrackerApp() {
       const err = await res.json();
       return err.error ?? "Failed to delete employee";
     }
-    const emps = await loadEmployees();
-    // If we just removed the person we were "logged in as", pick another.
-    if (!emps.some((e) => e.id === currentEmployeeId)) {
-      const next = emps[0]?.id ?? null;
-      setCurrentEmployeeId(next);
-      if (next) localStorage.setItem(CURRENT_USER_KEY, String(next));
-      else localStorage.removeItem(CURRENT_USER_KEY);
-    }
+    await loadEmployees();
     // Clear a filter that pointed at the now-deleted employee, otherwise it
     // would keep silently filtering by a missing id and show nothing.
     if (filters.employeeId === id) {
@@ -193,34 +169,10 @@ export default function TimeTrackerApp() {
         <div>
           <h1 className="text-2xl font-semibold text-stone-800">Lex Time</h1>
           <p className="text-sm text-stone-500">
-            Daily time tracking by client and billability
+            Firm-wide time tracking by employee, client, and billability
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          {employees.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <label
-                className="flex items-center gap-2 text-sm text-stone-500"
-                title="Mock sign-in — real auth is out of scope. New entries default to this person; everyone's time stays visible to all."
-              >
-                <span className="hidden sm:inline">Logged in as</span>
-                <select
-                  value={currentEmployeeId ?? ""}
-                  onChange={(e) => handleSwitchUser(Number(e.target.value))}
-                  className="rounded-lg border border-line bg-surface px-3 py-2 font-medium text-stone-900 shadow-sm outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
-                >
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <span className="hidden text-[11px] text-stone-400 sm:block">
-                Sets who new entries are logged under
-              </span>
-            </div>
-          )}
           <button
             onClick={() => setManageOpen(true)}
             className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-sand"
@@ -270,7 +222,6 @@ export default function TimeTrackerApp() {
           key={editingEntry?.id ?? "new"}
           employees={employees}
           clients={clients}
-          defaultEmployeeId={currentEmployeeId}
           initial={editingEntry ?? undefined}
           onSubmit={handleSubmitEntry}
           onCancel={closeModal}
@@ -285,7 +236,6 @@ export default function TimeTrackerApp() {
         onClose={() => setManageOpen(false)}
         employees={employees}
         clients={clients}
-        currentEmployeeId={currentEmployeeId}
         onCreateEmployee={createEmployee}
         onCreateClient={createClient}
         onDeleteEmployee={deleteEmployee}

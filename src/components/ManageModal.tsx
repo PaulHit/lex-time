@@ -11,7 +11,6 @@ export default function ManageModal({
   onClose,
   employees,
   clients,
-  currentEmployeeId,
   onCreateEmployee,
   onCreateClient,
   onDeleteEmployee,
@@ -21,7 +20,6 @@ export default function ManageModal({
   onClose: () => void;
   employees: Employee[];
   clients: Client[];
-  currentEmployeeId: number | null;
   onCreateEmployee: (name: string) => Promise<Employee>;
   onCreateClient: (name: string) => Promise<Client>;
   onDeleteEmployee: (id: number) => Promise<string | null>;
@@ -33,7 +31,6 @@ export default function ManageModal({
         <ManageList
           heading="Employees"
           items={employees}
-          currentId={currentEmployeeId}
           addPlaceholder="New employee name"
           onCreate={onCreateEmployee}
           onDelete={onDeleteEmployee}
@@ -57,14 +54,12 @@ export default function ManageModal({
 function ManageList({
   heading,
   items,
-  currentId,
   addPlaceholder,
   onCreate,
   onDelete,
 }: {
   heading: string;
   items: Item[];
-  currentId?: number | null;
   addPlaceholder: string;
   onCreate: (name: string) => Promise<Item>;
   onDelete: (id: number) => Promise<string | null>;
@@ -104,14 +99,7 @@ function ManageList({
             key={item.id}
             className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-stone-700"
           >
-            <span className="truncate">
-              {item.name}
-              {currentId === item.id && (
-                <span className="ml-2 rounded-full bg-sand px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500">
-                  You
-                </span>
-              )}
-            </span>
+            <span className="truncate">{item.name}</span>
             <button
               type="button"
               onClick={() => handleDelete(item.id)}
