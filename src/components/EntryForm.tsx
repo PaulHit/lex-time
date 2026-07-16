@@ -128,7 +128,7 @@ export default function EntryForm({
               type="checkbox"
               checked={billable}
               onChange={(e) => setBillable(e.target.checked)}
-              className="h-4 w-4 rounded border-line accent-stone-700"
+              className="h-4 w-4 cursor-pointer rounded border-line accent-stone-700"
             />
             {billable ? "Billable" : "Non-billable"}
           </label>

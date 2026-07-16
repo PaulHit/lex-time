@@ -51,49 +51,138 @@ const CLIENT_NAMES = [
   "Pro Bono",
 ];
 
-// Each tuple: [employeeName, clientName, daysAgo, start, end, durationMinutes, billable, notes]
-// When start/end are provided, duration is derived from them; otherwise durationMinutes is used.
-type SeedEntry = [
-  string,
-  string,
-  number,
-  string | null,
-  string | null,
-  number | null,
-  0 | 1,
-  string | null,
+const BILLABLE_NOTES = [
+  "Contract review and redlines",
+  "Client call re: settlement terms",
+  "Deposition prep",
+  "Discovery strategy call",
+  "Drafting NDA and MSA",
+  "Due diligence review",
+  "Regulatory compliance memo",
+  "Patent claim analysis",
+  "Litigation research",
+  "Merger term sheet",
+  "Board resolution drafting",
+  "Employment agreement review",
+  "Trademark filing",
+  "Vendor contract dispute",
+  "IP portfolio audit",
+  "Weekly client update",
+  "Reviewing opposing counsel's brief",
+  "Preparing exhibits for hearing",
+  "Drafting motion to dismiss",
+  "Lease agreement negotiation",
+  "Privacy policy update",
+  "Corporate filing review",
+  "Contract negotiation",
+  null, // some entries are logged without a note
 ];
 
-const SEED_ENTRIES: SeedEntry[] = [
-  ["Alice Nguyen", "Acme Corp", 0, "09:00", "11:30", null, 1, "Contract review and redlines"],
-  ["Alice Nguyen", "Stark & Associates", 0, "13:00", "14:15", null, 1, "Discovery strategy call"],
-  ["Ben Carter", "Wayne Enterprises", 0, "10:00", "12:00", null, 1, "Drafting NDA and MSA"],
-  ["Priya Shah", "Globex Industries", 0, null, null, 45, 0, "Internal matter sync"],
-  ["Marcus Feld", "Initech LLC", 0, "14:30", "17:00", null, 1, "Deposition prep"],
-
-  ["Alice Nguyen", "Initech LLC", 1, "13:00", "14:00", null, 1, "Client call re: settlement terms"],
-  ["Ben Carter", "Pro Bono", 1, null, null, 90, 0, "Pro bono intake consultation"],
-  ["Priya Shah", "Acme Corp", 1, "09:30", "12:30", null, 1, "Due diligence review"],
-  ["Dana Whitfield", "Stark & Associates", 1, "15:00", "16:30", null, 1, "Trademark filing"],
-
-  ["Marcus Feld", "Wayne Enterprises", 2, "09:00", "11:45", null, 1, "Regulatory compliance memo"],
-  ["Alice Nguyen", "Globex Industries", 2, "13:30", "15:00", null, 1, "Contract negotiation"],
-  ["Dana Whitfield", "Pro Bono", 2, null, null, 120, 0, "Community legal clinic"],
-
-  ["Ben Carter", "Acme Corp", 3, "10:00", "12:15", null, 1, null],
-  ["Priya Shah", "Initech LLC", 3, "14:00", "16:00", null, 1, "Patent claim analysis"],
-  ["Marcus Feld", "Stark & Associates", 3, null, null, 30, 0, "Case admin"],
-
-  ["Alice Nguyen", "Wayne Enterprises", 4, "09:15", "11:00", null, 1, "Board resolution drafting"],
-  ["Dana Whitfield", "Globex Industries", 4, "13:00", "15:30", null, 1, "Employment agreement review"],
-  ["Ben Carter", "Initech LLC", 4, "16:00", "17:00", null, 1, "Weekly client update"],
-
-  ["Priya Shah", "Stark & Associates", 6, "10:30", "13:00", null, 1, "Litigation research"],
-  ["Marcus Feld", "Acme Corp", 6, "14:00", "15:45", null, 1, "Merger term sheet"],
-  ["Alice Nguyen", "Pro Bono", 7, null, null, 60, 0, "Pro bono case review"],
-  ["Dana Whitfield", "Wayne Enterprises", 8, "09:00", "12:00", null, 1, "IP portfolio audit"],
-  ["Ben Carter", "Globex Industries", 9, "13:30", "16:00", null, 1, "Vendor contract dispute"],
+const NON_BILLABLE_NOTES = [
+  "Case admin",
+  "Internal matter sync",
+  "Practice group meeting",
+  "CLE training session",
 ];
+
+const PRO_BONO_NOTES = [
+  "Pro bono intake consultation",
+  "Community legal clinic",
+  "Pro bono case review",
+];
+
+// Long enough to exercise the notes Show more / Show less toggle out of the box.
+const LONG_NOTE =
+  "Full review of the amended master services agreement, including the indemnity and limitation-of-liability clauses. Flagged three provisions that conflict with the client's standard negotiating position, drafted alternative language for each, and summarised the trade-offs in a short memo for the partner ahead of Thursday's call.";
+
+type SeedEntry = {
+  employee: string;
+  client: string;
+  daysAgo: number;
+  start: string | null;
+  end: string | null;
+  durationMinutes: number;
+  billable: 0 | 1;
+  notes: string | null;
+};
+
+/** Deterministic PRNG (LCG) so every fresh clone seeds an identical dataset. */
+function makeRandom(seed: number) {
+  let state = seed;
+  return () => {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  };
+}
+
+const HHMM = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(
+    minutes % 60,
+  ).padStart(2, "0")}`;
+
+/**
+ * Builds ~70 entries across the last five weeks: a couple of matters per
+ * weekday, the odd weekend push, and today always populated so the "Today"
+ * filter is never empty.
+ */
+function buildSeedEntries(): SeedEntry[] {
+  const rand = makeRandom(20260716);
+  const pick = <T,>(items: readonly T[]): T =>
+    items[Math.floor(rand() * items.length)];
+
+  const rows: SeedEntry[] = [];
+  const today = new Date();
+
+  for (let daysAgo = 34; daysAgo >= 0; daysAgo--) {
+    const day = new Date(today);
+    day.setDate(day.getDate() - daysAgo);
+    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+    let count: number;
+    if (daysAgo === 0) count = 3; // keep "Today" populated whenever it's cloned
+    else if (isWeekend) count = rand() < 0.4 ? 1 : 0;
+    else count = 2 + Math.floor(rand() * 3);
+
+    for (let i = 0; i < count; i++) {
+      const client = pick(CLIENT_NAMES);
+      const isProBono = client === "Pro Bono";
+      const billable: 0 | 1 = isProBono ? 0 : rand() < 0.85 ? 1 : 0;
+
+      // 15-minute increments, 30 min to 4 h.
+      const durationMinutes = (2 + Math.floor(rand() * 15)) * 15;
+      const usesClock = rand() < 0.7;
+      // 08:00–16:00 start, so the latest possible end lands at 20:00.
+      const startMinutes = 8 * 60 + Math.floor(rand() * 33) * 15;
+
+      rows.push({
+        employee: pick(EMPLOYEE_NAMES),
+        client,
+        daysAgo,
+        start: usesClock ? HHMM(startMinutes) : null,
+        end: usesClock ? HHMM(startMinutes + durationMinutes) : null,
+        durationMinutes,
+        billable,
+        notes: isProBono
+          ? pick(PRO_BONO_NOTES)
+          : billable
+            ? pick(BILLABLE_NOTES)
+            : pick(NON_BILLABLE_NOTES),
+      });
+    }
+  }
+
+  // Give one of today's entries a long note so the Show more toggle is
+  // discoverable on a fresh clone. Pro bono work stays non-billable.
+  const showcase =
+    rows.find((r) => r.daysAgo === 0 && r.client !== "Pro Bono") ??
+    rows.find((r) => r.daysAgo === 0);
+  if (showcase) {
+    showcase.notes = LONG_NOTE;
+    if (showcase.client !== "Pro Bono") showcase.billable = 1;
+  }
+
+  return rows;
+}
 
 function seed() {
   const employeeCount = (
@@ -144,41 +233,25 @@ function seed() {
     const iso = (daysAgo: number) => {
       const d = new Date(today);
       d.setDate(d.getDate() - daysAgo);
-      return d.toISOString().slice(0, 10);
-    };
-    const toMinutes = (t: string) => {
-      const [h, m] = t.split(":").map(Number);
-      return h * 60 + m;
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
     };
 
     const insertMany = db.transaction((entries: SeedEntry[]) => {
-      for (const [
-        empName,
-        cliName,
-        daysAgo,
-        start,
-        end,
-        duration,
-        billable,
-        notes,
-      ] of entries) {
-        const derived =
-          start && end
-            ? toMinutes(end) - toMinutes(start)
-            : (duration ?? 0);
+      for (const row of entries) {
         insert.run({
-          employee_id: employeeId.get(empName),
-          client_id: clientId.get(cliName),
-          date: iso(daysAgo),
-          start_time: start,
-          end_time: end,
-          duration_minutes: derived,
-          billable,
-          notes,
+          employee_id: employeeId.get(row.employee),
+          client_id: clientId.get(row.client),
+          date: iso(row.daysAgo),
+          start_time: row.start,
+          end_time: row.end,
+          duration_minutes: row.durationMinutes,
+          billable: row.billable,
+          notes: row.notes,
         });
       }
     });
-    insertMany(SEED_ENTRIES);
+    insertMany(buildSeedEntries());
   }
 }
 seed();

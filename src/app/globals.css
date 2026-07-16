@@ -24,6 +24,13 @@ html {
   color-scheme: light;
 }
 
+/* Tailwind v4's preflight sets buttons to `cursor: default`. Put the pointer
+   back on every button, while leaving selects and disabled controls alone
+   (disabled buttons keep their own `disabled:cursor-*` utility). */
+button:not(:disabled) {
+  cursor: pointer;
+}
+
 body {
   /* Soft diagonal wash: light cream at top-left easing into a deeper sand. */
   background: var(--background);
