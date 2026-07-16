@@ -10,6 +10,9 @@ const SELECT_ENTRY = `
   JOIN clients c ON c.id = te.client_id
 `;
 
+const MAX_LIMIT = 100;
+const DEFAULT_LIMIT = 25;
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const employeeId = searchParams.get("employeeId");
@@ -18,33 +21,64 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  let query = `${SELECT_ENTRY} WHERE 1=1`;
+  let where = " WHERE 1=1";
   const params: (string | number)[] = [];
 
   if (employeeId) {
-    query += " AND te.employee_id = ?";
+    where += " AND te.employee_id = ?";
     params.push(Number(employeeId));
   }
   if (clientId) {
-    query += " AND te.client_id = ?";
+    where += " AND te.client_id = ?";
     params.push(Number(clientId));
   }
   if (billable === "1" || billable === "0") {
-    query += " AND te.billable = ?";
+    where += " AND te.billable = ?";
     params.push(Number(billable));
   }
   if (from) {
-    query += " AND te.date >= ?";
+    where += " AND te.date >= ?";
     params.push(from);
   }
   if (to) {
-    query += " AND te.date <= ?";
+    where += " AND te.date <= ?";
     params.push(to);
   }
-  query += " ORDER BY te.date DESC, te.id DESC";
 
-  const entries = db.prepare(query).all(...params) as TimeEntry[];
-  return NextResponse.json(entries);
+  // Totals cover the whole filtered set, not just the page, so the summary
+  // stats stay meaningful while paging.
+  const totals = db
+    .prepare(
+      `SELECT
+         COUNT(*) as total,
+         COALESCE(SUM(te.duration_minutes), 0) as totalMinutes,
+         COALESCE(SUM(CASE WHEN te.billable = 1 THEN te.duration_minutes ELSE 0 END), 0) as billableMinutes
+       FROM time_entries te${where}`,
+    )
+    .get(...params) as {
+    total: number;
+    totalMinutes: number;
+    billableMinutes: number;
+  };
+
+  const parsedLimit = Number(searchParams.get("limit"));
+  const limit =
+    Number.isFinite(parsedLimit) && parsedLimit > 0
+      ? Math.min(Math.floor(parsedLimit), MAX_LIMIT)
+      : DEFAULT_LIMIT;
+  const parsedOffset = Number(searchParams.get("offset"));
+  const offset =
+    Number.isFinite(parsedOffset) && parsedOffset > 0
+      ? Math.floor(parsedOffset)
+      : 0;
+
+  const entries = db
+    .prepare(
+      `${SELECT_ENTRY}${where} ORDER BY te.date DESC, te.id DESC LIMIT ? OFFSET ?`,
+    )
+    .all(...params, limit, offset) as TimeEntry[];
+
+  return NextResponse.json({ entries, ...totals });
 }
 
 export async function POST(req: NextRequest) {

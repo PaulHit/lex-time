@@ -8,6 +8,14 @@ export type Client = {
   name: string;
 };
 
+export type EntriesResponse = {
+  entries: TimeEntry[];
+  /** Counts/sums span the whole filtered set, not just the returned page. */
+  total: number;
+  totalMinutes: number;
+  billableMinutes: number;
+};
+
 export type TimeEntry = {
   id: number;
   employee_id: number;

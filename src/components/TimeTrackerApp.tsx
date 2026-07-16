@@ -7,17 +7,27 @@ import SummaryStats from "./SummaryStats";
 import FiltersBar, { Filters, DEFAULT_FILTERS } from "./FiltersBar";
 import Modal from "./Modal";
 import ManageModal from "./ManageModal";
+import Pagination from "./Pagination";
 import { rangeToDates } from "@/lib/time";
-import { Client, Employee, TimeEntry } from "@/lib/types";
+import { Client, EntriesResponse, Employee, TimeEntry } from "@/lib/types";
+
+const DEFAULT_PAGE_SIZE = 10;
 
 export default function TimeTrackerApp() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [summary, setSummary] = useState({
+    total: 0,
+    totalMinutes: 0,
+    billableMinutes: 0,
+  });
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [filters, setFilters] = useState<Filters>({
     ...DEFAULT_FILTERS,
   });
@@ -36,24 +46,35 @@ export default function TimeTrackerApp() {
     return data;
   }, []);
 
-  const loadEntries = useCallback(async (activeFilters: Filters) => {
-    setLoadingEntries(true);
-    const params = new URLSearchParams();
-    if (activeFilters.employeeId !== "all")
-      params.set("employeeId", String(activeFilters.employeeId));
-    if (activeFilters.clientId !== "all")
-      params.set("clientId", String(activeFilters.clientId));
-    if (activeFilters.billable !== "all")
-      params.set("billable", activeFilters.billable);
-    const { from, to } = rangeToDates(activeFilters.range);
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
+  const loadEntries = useCallback(
+    async (activeFilters: Filters, activePage: number, activeSize: number) => {
+      setLoadingEntries(true);
+      const params = new URLSearchParams();
+      if (activeFilters.employeeId !== "all")
+        params.set("employeeId", String(activeFilters.employeeId));
+      if (activeFilters.clientId !== "all")
+        params.set("clientId", String(activeFilters.clientId));
+      if (activeFilters.billable !== "all")
+        params.set("billable", activeFilters.billable);
+      const { from, to } = rangeToDates(activeFilters.range);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      params.set("limit", String(activeSize));
+      params.set("offset", String((activePage - 1) * activeSize));
 
-    const res = await fetch(`/api/entries?${params.toString()}`);
-    const data: TimeEntry[] = await res.json();
-    setEntries(data);
-    setLoadingEntries(false);
-  }, []);
+      const res = await fetch(`/api/entries?${params.toString()}`);
+      const data: EntriesResponse = await res.json();
+      setEntries(data.entries);
+      setSummary({
+        total: data.total,
+        totalMinutes: data.totalMinutes,
+        billableMinutes: data.billableMinutes,
+      });
+      setLoadingEntries(false);
+      return data;
+    },
+    [],
+  );
 
   useEffect(() => {
     (async () => {
@@ -63,11 +84,23 @@ export default function TimeTrackerApp() {
   }, [loadEmployees, loadClients]);
 
   useEffect(() => {
-    // Refetching from the server when filters change is intentional here,
-    // not the accidental setState-in-effect pattern this rule targets.
+    // Refetching from the server when filters/paging change is intentional
+    // here, not the accidental setState-in-effect pattern this rule targets.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadEntries(filters);
-  }, [filters, loadEntries]);
+    loadEntries(filters, page, pageSize);
+  }, [filters, page, pageSize, loadEntries]);
+
+  // Filter and page-size changes reset paging — otherwise you can land on a
+  // page number that no longer exists in the new result set.
+  function changeFilters(next: Filters) {
+    setFilters(next);
+    setPage(1);
+  }
+
+  function changePageSize(next: number) {
+    setPageSize(next);
+    setPage(1);
+  }
 
   function openNewEntry() {
     setEditingEntry(null);
@@ -149,7 +182,7 @@ export default function TimeTrackerApp() {
       throw new Error(err.error ?? "Failed to save entry");
     }
     closeModal();
-    await loadEntries(filters);
+    await loadEntries(filters, page, pageSize);
   }
 
   async function handleDeleteEntry(entry: TimeEntry) {
@@ -160,7 +193,9 @@ export default function TimeTrackerApp() {
     )
       return;
     await fetch(`/api/entries/${entry.id}`, { method: "DELETE" });
-    await loadEntries(filters);
+    const data = await loadEntries(filters, page, pageSize);
+    // Deleting the last row on the last page would strand us on an empty one.
+    if (data.entries.length === 0 && page > 1) setPage(page - 1);
   }
 
   return (
@@ -189,19 +224,23 @@ export default function TimeTrackerApp() {
         </div>
       </header>
 
-      <SummaryStats entries={entries} />
+      <SummaryStats
+        total={summary.total}
+        totalMinutes={summary.totalMinutes}
+        billableMinutes={summary.billableMinutes}
+      />
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-700">Logged time</h2>
           <span className="text-xs text-stone-400">
-            {entries.length} {entries.length === 1 ? "entry" : "entries"}
+            {summary.total} {summary.total === 1 ? "entry" : "entries"}
           </span>
         </div>
         <FiltersBar
           filters={filters}
-          onChange={setFilters}
-          onReset={() => setFilters({ ...DEFAULT_FILTERS })}
+          onChange={changeFilters}
+          onReset={() => changeFilters({ ...DEFAULT_FILTERS })}
           employees={employees}
           clients={clients}
         />
@@ -211,6 +250,15 @@ export default function TimeTrackerApp() {
           onEdit={openEditEntry}
           onDelete={handleDeleteEntry}
         />
+        {summary.total > 0 && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={summary.total}
+            onPageChange={setPage}
+            onPageSizeChange={changePageSize}
+          />
+        )}
       </section>
 
       <Modal

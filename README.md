@@ -16,6 +16,7 @@ If this were taken further, real per-user auth would be the natural next step: e
 - **Log time** with date, client, billable/non-billable, and duration — entered either as a start/end time (auto-calculated) or directly in hours.
 - **View logged time** in a table showing date, employee, client, duration, and billable status, with live summary stats (total / billable / non-billable hours).
 - **Filter** entries by employee, client, billability, and date range (today / this week / this month / all time).
+- **Pagination** with a configurable page size (10 / 25 / 50 / 100). Paging is done server-side via `limit`/`offset`, and the summary stats are aggregated over the **whole filtered set** rather than the visible page — so the totals stay meaningful as you page.
 - **Edit and delete** any entry inline.
 - **Clients and employees** can be added on the fly from the entry form, or managed in a dedicated **People & clients** dialog (add or remove). Removal is blocked while a person/client still has time entries, so you never orphan data. A few of each are seeded on first run.
 - **Long notes** collapse to a preview with a **Show more / Show less** toggle, so the table stays tidy.

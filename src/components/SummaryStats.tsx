@@ -1,17 +1,20 @@
 import { formatHoursDecimal } from "@/lib/time";
-import { TimeEntry } from "@/lib/types";
 
-export default function SummaryStats({ entries }: { entries: TimeEntry[] }) {
-  const totalMinutes = entries.reduce((sum, e) => sum + e.duration_minutes, 0);
-  const billableMinutes = entries
-    .filter((e) => e.billable)
-    .reduce((sum, e) => sum + e.duration_minutes, 0);
+export default function SummaryStats({
+  total,
+  totalMinutes,
+  billableMinutes,
+}: {
+  total: number;
+  totalMinutes: number;
+  billableMinutes: number;
+}) {
   const nonBillableMinutes = totalMinutes - billableMinutes;
   const billablePct =
     totalMinutes > 0 ? Math.round((billableMinutes / totalMinutes) * 100) : 0;
 
   const stats = [
-    { label: "Entries", value: String(entries.length), accent: "text-stone-800" },
+    { label: "Entries", value: String(total), accent: "text-stone-800" },
     {
       label: "Total hours",
       value: formatHoursDecimal(totalMinutes),
