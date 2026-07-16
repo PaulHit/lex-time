@@ -18,10 +18,23 @@ export function formatHoursDecimal(minutes: number): string {
   return (minutes / 60).toFixed(2);
 }
 
+/**
+ * Formats a date as YYYY-MM-DD from its *local* calendar fields.
+ *
+ * Deliberately avoids toISOString(), which converts to UTC first and so
+ * reports the wrong day for anyone whose offset pushes local midnight over
+ * the date boundary.
+ */
+export function toISODate(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 export function todayISO(): string {
-  const d = new Date();
-  const tzOffset = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+  return toISODate(new Date());
 }
 
 export function rangeToDates(
@@ -29,7 +42,7 @@ export function rangeToDates(
 ): { from?: string; to?: string } {
   if (range === "all") return {};
   const now = new Date();
-  const to = todayISO();
+  const to = toISODate(now);
 
   if (range === "today") return { from: to, to };
 
@@ -38,12 +51,11 @@ export function rangeToDates(
     const diffToMonday = day === 0 ? 6 : day - 1;
     const monday = new Date(now);
     monday.setDate(now.getDate() - diffToMonday);
-    return { from: monday.toISOString().slice(0, 10), to };
+    return { from: toISODate(monday), to };
   }
 
-  // month
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  return { from: firstOfMonth.toISOString().slice(0, 10), to };
+  return { from: toISODate(firstOfMonth), to };
 }
 
 export function formatDateLabel(iso: string): string {

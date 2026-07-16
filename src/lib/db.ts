@@ -1,11 +1,19 @@
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
+import { toISODate } from "./time";
 
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+// The app persists to data/timesheet.db; tests point LEX_TIME_DB at an
+// in-memory database so they never touch real data.
+const DB_PATH =
+  process.env.LEX_TIME_DB ?? path.join(process.cwd(), "data", "timesheet.db");
 
-const db = new Database(path.join(dataDir, "timesheet.db"));
+if (DB_PATH !== ":memory:") {
+  const dataDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
@@ -246,8 +254,7 @@ function seed() {
     const iso = (daysAgo: number) => {
       const d = new Date(today);
       d.setDate(d.getDate() - daysAgo);
-      const tzOffset = d.getTimezoneOffset() * 60000;
-      return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+      return toISODate(d);
     };
 
     const insertMany = db.transaction((entries: SeedEntry[]) => {
@@ -267,6 +274,7 @@ function seed() {
     insertMany(buildSeedEntries());
   }
 }
-seed();
+// Tests build their own fixtures, so they opt out of the example data.
+if (process.env.LEX_TIME_SKIP_SEED !== "1") seed();
 
 export default db;
