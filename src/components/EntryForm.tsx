@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import CreatableSelect from "./CreatableSelect";
-import { todayISO } from "@/lib/time";
+import { formatDuration, minutesBetween, todayISO } from "@/lib/time";
 import { Client, Employee, TimeEntry } from "@/lib/types";
 
 export type EntryPayload = {
@@ -51,13 +51,22 @@ export default function EntryForm({
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [startTime, setStartTime] = useState(initial?.start_time ?? "09:00");
   const [endTime, setEndTime] = useState(initial?.end_time ?? "10:00");
-  const [durationHours, setDurationHours] = useState(
-    initial ? (initial.duration_minutes / 60).toFixed(2) : "1.00",
+  const [hours, setHours] = useState(
+    initial ? String(Math.floor(initial.duration_minutes / 60)) : "1",
+  );
+  const [minutes, setMinutes] = useState(
+    initial ? String(initial.duration_minutes % 60) : "0",
   );
   const [billable, setBillable] = useState(initial ? !!initial.billable : true);
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Minutes are the unit of record end to end, so hours/minutes need no
+  // rounding trip through a decimal.
+  const durationTotal =
+    Math.max(0, Math.trunc(Number(hours) || 0)) * 60 +
+    Math.max(0, Math.trunc(Number(minutes) || 0));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,8 +78,8 @@ export default function EntryForm({
     if (mode === "time" && (!startTime || !endTime)) {
       return setError("Enter both a start and end time.");
     }
-    if (mode === "duration" && !(Number(durationHours) > 0)) {
-      return setError("Duration must be greater than zero.");
+    if (mode === "duration" && durationTotal <= 0) {
+      return setError("Enter a duration of at least one minute.");
     }
 
     setSubmitting(true);
@@ -81,8 +90,7 @@ export default function EntryForm({
         date,
         startTime: mode === "time" ? startTime : null,
         endTime: mode === "time" ? endTime : null,
-        durationMinutes:
-          mode === "duration" ? Math.round(Number(durationHours) * 60) : null,
+        durationMinutes: mode === "duration" ? durationTotal : null,
         billable,
         notes: notes.trim() || null,
       });
@@ -181,18 +189,42 @@ export default function EntryForm({
                 className={inputClass}
               />
             </div>
+            <div className="flex flex-col justify-end pb-2">
+              <span className="text-xs text-stone-500">
+                {startTime && endTime
+                  ? `= ${formatDuration(minutesBetween(startTime, endTime))}`
+                  : ""}
+              </span>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-1 sm:w-40">
-            <label className={labelClass}>Hours</label>
-            <input
-              type="number"
-              step="0.25"
-              min="0.25"
-              value={durationHours}
-              onChange={(e) => setDurationHours(e.target.value)}
-              className={inputClass}
-            />
+          <div className="flex items-end gap-3">
+            <div className="flex w-24 flex-col gap-1">
+              <label className={labelClass}>Hours</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="flex w-24 flex-col gap-1">
+              <label className={labelClass}>Minutes</label>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                step="1"
+                value={minutes}
+                onChange={(e) => setMinutes(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <span className="pb-2 text-xs text-stone-500">
+              {durationTotal > 0 ? `= ${formatDuration(durationTotal)}` : ""}
+            </span>
           </div>
         )}
       </div>
