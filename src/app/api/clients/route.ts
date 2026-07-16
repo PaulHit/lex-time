@@ -4,7 +4,7 @@ import { Client } from "@/lib/types";
 
 export async function GET() {
   const clients = db
-    .prepare("SELECT * FROM clients ORDER BY name")
+    .prepare("SELECT id, name FROM clients WHERE deleted_at IS NULL ORDER BY name")
     .all() as Client[];
   return NextResponse.json(clients);
 }
@@ -17,13 +17,24 @@ export async function POST(req: NextRequest) {
   }
 
   const existing = db
-    .prepare("SELECT * FROM clients WHERE name = ?")
-    .get(name) as Client | undefined;
-  if (existing) return NextResponse.json(existing, { status: 200 });
+    .prepare("SELECT id, name, deleted_at FROM clients WHERE name = ?")
+    .get(name) as { id: number; name: string; deleted_at: string | null } | undefined;
+  if (existing) {
+    // Re-adding a name that sits in the trash restores it instead of colliding.
+    if (existing.deleted_at) {
+      db.prepare("UPDATE clients SET deleted_at = NULL WHERE id = ?").run(
+        existing.id,
+      );
+    }
+    return NextResponse.json(
+      { id: existing.id, name: existing.name },
+      { status: 200 },
+    );
+  }
 
   const info = db.prepare("INSERT INTO clients (name) VALUES (?)").run(name);
   const client = db
-    .prepare("SELECT * FROM clients WHERE id = ?")
+    .prepare("SELECT id, name FROM clients WHERE id = ?")
     .get(info.lastInsertRowid) as Client;
   return NextResponse.json(client, { status: 201 });
 }

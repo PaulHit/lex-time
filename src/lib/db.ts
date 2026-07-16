@@ -12,12 +12,14 @@ db.pragma("foreign_keys = ON");
 db.exec(`
   CREATE TABLE IF NOT EXISTS employees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE,
+    deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE,
+    deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS time_entries (
@@ -30,9 +32,20 @@ db.exec(`
     duration_minutes INTEGER NOT NULL,
     billable INTEGER NOT NULL DEFAULT 1,
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT
   );
 `);
+
+// Migrate databases created before soft delete existed.
+for (const table of ["employees", "clients", "time_entries"]) {
+  const columns = db
+    .prepare(`PRAGMA table_info(${table})`)
+    .all() as { name: string }[];
+  if (!columns.some((c) => c.name === "deleted_at")) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at TEXT`);
+  }
+}
 
 const EMPLOYEE_NAMES = [
   "Alice Nguyen",

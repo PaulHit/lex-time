@@ -8,6 +8,22 @@ export type Client = {
   name: string;
 };
 
+export type TrashedEntry = TimeEntry & { deleted_at: string };
+
+export type TrashedRecord = {
+  id: number;
+  name: string;
+  deleted_at: string;
+  /** How many of this record's entries are also in the trash. */
+  trashedEntryCount: number;
+};
+
+export type TrashResponse = {
+  entries: TrashedEntry[];
+  employees: TrashedRecord[];
+  clients: TrashedRecord[];
+};
+
 export type EntriesResponse = {
   entries: TimeEntry[];
   /** Counts/sums span the whole filtered set, not just the returned page. */

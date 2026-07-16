@@ -44,8 +44,9 @@ export default function ManageModal({
         />
       </div>
       <p className="mt-5 border-t border-line pt-4 text-xs text-stone-500">
-        An employee or client can only be removed once it has no time entries.
-        Delete or reassign their entries first.
+        Deleting an employee or client with logged time asks for confirmation,
+        then moves it and all of its entries to the Trash — nothing is lost
+        until the Trash is emptied.
       </p>
     </Modal>
   );

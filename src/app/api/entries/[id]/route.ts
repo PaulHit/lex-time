@@ -28,7 +28,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const existing = db
-    .prepare("SELECT * FROM time_entries WHERE id = ?")
+    .prepare("SELECT * FROM time_entries WHERE id = ? AND deleted_at IS NULL")
     .get(id) as RawEntry | undefined;
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -85,7 +85,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const result = db.prepare("DELETE FROM time_entries WHERE id = ?").run(id);
+  // Soft delete: the entry moves to the trash and can be restored from there.
+  const result = db
+    .prepare(
+      "UPDATE time_entries SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL",
+    )
+    .run(id);
   if (result.changes === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

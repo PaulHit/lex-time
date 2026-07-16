@@ -17,8 +17,9 @@ If this were taken further, real per-user auth would be the natural next step: e
 - **View logged time** in a table showing date, employee, client, duration, and billable status, with live summary stats (total / billable / non-billable hours).
 - **Filter** entries by employee, client, billability, and date range (today / this week / this month / all time).
 - **Pagination** with a configurable page size (10 / 25 / 50 / 100). Paging is done server-side via `limit`/`offset`, and the summary stats are aggregated over the **whole filtered set** rather than the visible page — so the totals stay meaningful as you page.
-- **Edit and delete** any entry inline.
-- **Clients and employees** can be added on the fly from the entry form, or managed in a dedicated **People & clients** dialog (add or remove). Removal is blocked while a person/client still has time entries, so you never orphan data. A few of each are seeded on first run.
+- **Edit and delete** any entry inline, or **select multiple entries** (checkboxes, with page-level select-all) and delete them in one batch.
+- **Trash with restore**: nothing is destroyed on delete. Entries, employees, and clients move to a **Trash tab**, where each item can be restored or deleted forever, and the whole trash can be emptied. Restoring an entry auto-restores its employee/client if they were trashed too, so a live entry never points at deleted records.
+- **Clients and employees** can be added on the fly from the entry form, or managed in a dedicated **People & clients** dialog. Deleting one that still has logged time shows a confirmation with the exact entry count, then moves the record *and* its entries to the Trash together. Re-adding a trashed name restores it instead of colliding. A few of each are seeded on first run.
 - **Long notes** collapse to a preview with a **Show more / Show less** toggle, so the table stays tidy.
 - **Local persistence**: all data is stored in `data/timesheet.db` (SQLite), created automatically on first run. Nothing is lost on refresh or restart.
 
@@ -46,7 +47,7 @@ npm run start
 
 - **Framework**: Next.js App Router with Route Handlers (`src/app/api/**`) acting as the backend API.
 - **Database**: SQLite via `better-sqlite3`, schema and seed data initialized lazily in [src/lib/db.ts](src/lib/db.ts). The `data/` directory is gitignored — it's local, per-machine state, not something to commit.
-- **Data model**: `employees`, `clients`, and `time_entries` tables. A time entry stores either `start_time`/`end_time` or a plain `duration_minutes`, plus a `billable` flag and optional notes.
+- **Data model**: `employees`, `clients`, and `time_entries` tables. A time entry stores either `start_time`/`end_time` or a plain `duration_minutes`, plus a `billable` flag and optional notes. Deletion is a **soft delete** (`deleted_at` column) — the Trash is just the set of soft-deleted rows, and "delete forever" is the only hard `DELETE`.
 - **UI**: a single client-side page (`src/components/TimeTrackerApp.tsx`) composed of summary stats, a filter bar, a table, and a modal entry form (`src/components/Modal.tsx` + `EntryForm.tsx`), talking to the API routes over `fetch`. Light, bright theme throughout.
 
 ## What's out of scope (per the assignment)

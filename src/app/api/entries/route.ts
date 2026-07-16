@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  let where = " WHERE 1=1";
+  let where = " WHERE te.deleted_at IS NULL";
   const params: (string | number)[] = [];
 
   if (employeeId) {
