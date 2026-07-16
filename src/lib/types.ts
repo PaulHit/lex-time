@@ -8,6 +8,11 @@ export type Client = {
   name: string;
 };
 
+export type TrashItem = {
+  type: "entry" | "employee" | "client";
+  id: number;
+};
+
 export type TrashedEntry = TimeEntry & { deleted_at: string };
 
 export type TrashedRecord = {

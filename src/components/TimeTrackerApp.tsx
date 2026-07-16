@@ -8,7 +8,7 @@ import FiltersBar, { Filters, DEFAULT_FILTERS } from "./FiltersBar";
 import Modal from "./Modal";
 import ManageModal from "./ManageModal";
 import Pagination from "./Pagination";
-import TrashView from "./TrashView";
+import TrashView, { parseTrashKey } from "./TrashView";
 import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
 import { formatDateLabel, rangeToDates } from "@/lib/time";
 import {
@@ -16,9 +16,8 @@ import {
   EntriesResponse,
   Employee,
   TimeEntry,
+  TrashItem,
   TrashResponse,
-  TrashedEntry,
-  TrashedRecord,
 } from "@/lib/types";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -36,6 +35,7 @@ export default function TimeTrackerApp() {
   const [trash, setTrash] = useState<TrashResponse>(EMPTY_TRASH);
   const [view, setView] = useState<"log" | "trash">("log");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [trashSelected, setTrashSelected] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -290,68 +290,93 @@ export default function TimeTrackerApp() {
     });
   }
 
-  async function handleRestoreEntry(entry: TrashedEntry) {
+  function toggleTrashRow(key: string) {
+    setTrashSelected((keys) =>
+      keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key],
+    );
+  }
+
+  function toggleTrashMany(keys: string[], selected: boolean) {
+    setTrashSelected((current) =>
+      selected
+        ? [...new Set([...current, ...keys])]
+        : current.filter((k) => !keys.includes(k)),
+    );
+  }
+
+  async function restoreItems(items: TrashItem[]) {
     await fetch("/api/trash/restore", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "entry", id: entry.id }),
+      body: JSON.stringify({ items }),
     });
+    setTrashSelected([]);
     await refreshData();
   }
 
-  async function handleRestoreRecord(
-    type: "employee" | "client",
-    record: TrashedRecord,
-  ) {
-    await fetch("/api/trash/restore", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, id: record.id }),
-    });
-    await refreshData();
-  }
-
-  function handlePurgeEntry(entry: TrashedEntry) {
+  function purgeItems(items: TrashItem[], title: string, message: string) {
     setConfirm({
-      title: "Delete forever?",
-      message: `The ${formatDateLabel(entry.date)} entry for ${
-        entry.client_name
-      } (${entry.employee_name}) will be permanently deleted. This cannot be undone.`,
+      title,
+      message,
       confirmLabel: "Delete forever",
       onConfirm: async () => {
         await fetch("/api/trash/purge", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "entry", id: entry.id }),
+          body: JSON.stringify({ items }),
         });
+        setTrashSelected([]);
         await refreshData();
       },
     });
   }
 
-  function handlePurgeRecord(
-    type: "employee" | "client",
-    record: TrashedRecord,
-  ) {
-    const alsoEntries =
-      record.trashedEntryCount > 0
-        ? ` along with ${record.trashedEntryCount} trashed ${
-            record.trashedEntryCount === 1 ? "entry" : "entries"
-          }`
-        : "";
-    setConfirm({
-      title: "Delete forever?",
-      message: `${record.name} will be permanently deleted${alsoEntries}. This cannot be undone.`,
-      confirmLabel: "Delete forever",
-      onConfirm: async () => {
-        await fetch("/api/trash/purge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, id: record.id }),
-        });
-        await refreshData();
-      },
-    });
+  /** Describes a purge batch, including entries swept along with records. */
+  function confirmPurge(items: TrashItem[]) {
+    const records = items.filter((i) => i.type !== "entry");
+    const sweptEntries = records.reduce((sum, item) => {
+      const list = item.type === "employee" ? trash.employees : trash.clients;
+      return sum + (list.find((r) => r.id === item.id)?.trashedEntryCount ?? 0);
+    }, 0);
+
+    if (items.length === 1) {
+      const [item] = items;
+      if (item.type === "entry") {
+        const entry = trash.entries.find((e) => e.id === item.id);
+        purgeItems(
+          items,
+          "Delete forever?",
+          entry
+            ? `The ${formatDateLabel(entry.date)} entry for ${entry.client_name} (${entry.employee_name}) will be permanently deleted. This cannot be undone.`
+            : "This entry will be permanently deleted. This cannot be undone.",
+        );
+        return;
+      }
+      const list = item.type === "employee" ? trash.employees : trash.clients;
+      const record = list.find((r) => r.id === item.id);
+      const also =
+        sweptEntries > 0
+          ? ` along with ${sweptEntries} trashed ${
+              sweptEntries === 1 ? "entry" : "entries"
+            }`
+          : "";
+      purgeItems(
+        items,
+        "Delete forever?",
+        `${record?.name ?? "This record"} will be permanently deleted${also}. This cannot be undone.`,
+      );
+      return;
+    }
+
+    purgeItems(
+      items,
+      `Delete ${items.length} items forever?`,
+      records.length > 0 && sweptEntries > 0
+        ? `This also permanently deletes ${sweptEntries} trashed ${
+            sweptEntries === 1 ? "entry" : "entries"
+          } belonging to the selected employees and clients. This cannot be undone.`
+        : "The selected items will be permanently deleted. This cannot be undone.",
+    );
   }
 
   function handleEmptyTrash() {
@@ -369,6 +394,7 @@ export default function TimeTrackerApp() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ all: true }),
         });
+        setTrashSelected([]);
         await refreshData();
       },
     });
@@ -486,10 +512,16 @@ export default function TimeTrackerApp() {
       ) : (
         <TrashView
           trash={trash}
-          onRestoreEntry={handleRestoreEntry}
-          onRestoreRecord={handleRestoreRecord}
-          onPurgeEntry={handlePurgeEntry}
-          onPurgeRecord={handlePurgeRecord}
+          selected={trashSelected}
+          onToggle={toggleTrashRow}
+          onToggleMany={toggleTrashMany}
+          onClearSelection={() => setTrashSelected([])}
+          onRestore={restoreItems}
+          onPurge={confirmPurge}
+          onRestoreSelected={() =>
+            restoreItems(trashSelected.map(parseTrashKey))
+          }
+          onPurgeSelected={() => confirmPurge(trashSelected.map(parseTrashKey))}
           onEmptyTrash={handleEmptyTrash}
         />
       )}

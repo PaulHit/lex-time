@@ -101,6 +101,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // A live entry must reference live records — otherwise it would point at
+  // something sitting in the trash, which restore/purge both assume can't happen.
+  const employeeExists = db
+    .prepare("SELECT 1 FROM employees WHERE id = ? AND deleted_at IS NULL")
+    .get(employeeId);
+  if (!employeeExists) {
+    return NextResponse.json({ error: "Unknown employee" }, { status: 400 });
+  }
+  const clientExists = db
+    .prepare("SELECT 1 FROM clients WHERE id = ? AND deleted_at IS NULL")
+    .get(clientId);
+  if (!clientExists) {
+    return NextResponse.json({ error: "Unknown client" }, { status: 400 });
+  }
+
   let duration: number;
   if (durationMinutes != null && durationMinutes !== "") {
     duration = Math.round(Number(durationMinutes));
